@@ -40,3 +40,6 @@ next-env.d.ts
 
 # notes
 /notes
+
+# package manager
+package-lock.json
