@@ -1,19 +1,15 @@
 'use client'
 
-import Pusher from 'pusher-js'
-
-const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY || '', {
-    cluster: 'ap2',
-})
-
-const channel = pusher.subscribe('web-rtc-channel')
+import { io } from 'socket.io-client'
 
 type Constraints = {
     video: boolean
     audio?: boolean
 }
 
-const serverURL = process.env.NEXT_PUBLIC_SIGNALING_SERVER_URL
+const serverURL = process.env.NEXT_PUBLIC_SIGNALING_SERVER_URL as string
+
+const socket = io(serverURL);
 
 const tracks = new Map<string, MediaStreamTrack>()
 
@@ -66,19 +62,7 @@ const createNewPeerConnection = async (): Promise<RTCPeerConnection> => {
 
         if (event.candidate) {
             console.log('Sending Ice Candidate', event.candidate)
-            try {
-                fetch(`${serverURL}/ice-candidate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        iceCandidate: event.candidate,
-                    }),
-                })
-            } catch (e) {
-                console.error('Error sending ice candidate', e)
-            }
+            socket.emit('ice-candidate', event.candidate)
         }
     }
 
@@ -116,19 +100,7 @@ const makeCall = async () => {
     console.log('Setting Local Description with this offer', offer)
     await pc.setLocalDescription(new RTCSessionDescription(offer))
 
-    try {
-        await fetch(`${serverURL}/offer`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                offer: offer,
-            }),
-        })
-    } catch (e) {
-        console.error('Error sending offer', e)
-    }
+    socket.emit('offer', offer)
 }
 
 async function handleOffer(offer: RTCSessionDescriptionInit) {
@@ -147,19 +119,7 @@ async function handleOffer(offer: RTCSessionDescriptionInit) {
     console.log('Setting Local Description with this answer', answer)
     await pc.setLocalDescription(new RTCSessionDescription(answer))
 
-    try {
-        await fetch(`${serverURL}/answer`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                answer: answer,
-            }),
-        })
-    } catch (e) {
-        console.error('Error sending answer', e)
-    }
+    socket.emit('answer', answer)
 }
 
 async function handleAnswer(answer: RTCSessionDescriptionInit) {
@@ -193,30 +153,28 @@ async function handleCandidate(candidate: RTCIceCandidate) {
 }
 
 export default function Home() {
-    channel.bind('offer', async (data: { message: RTCSessionDescription }) => {
-        console.log('Offer Received', data.message)
-        await handleOffer(data.message)
+    socket.on('connect', () => {
+        console.log('Socket Connected', socket.id)
     })
 
-    channel.bind('answer', async (data: { message: RTCSessionDescription }) => {
-        console.log('Answer Received', data.message)
-        await handleAnswer(data.message)
+    socket.on('disconnect', () => {
+        console.log('Socket Disconnected')
     })
 
-    channel.bind(
-        'ice-candidate',
-        async (data: { message: RTCIceCandidate }) => {
-            console.log('Ice Candidate Received', data.message)
-            if (!data.message) {
-                return
-            }
-            try {
-                await handleCandidate(data.message)
-            } catch (e) {
-                console.error('Error adding received ice candidate', e)
-            }
-        }
-    )
+    socket.on('offer', (offer: RTCSessionDescription) => {
+        console.log('Offer Received', offer)
+        handleOffer(offer)
+    });
+
+    socket.on('answer', (answer: RTCSessionDescription) => {
+        console.log('Answer Received', answer)
+        handleAnswer(answer)
+    });
+
+    socket.on('ice-candidate', (candidate: RTCIceCandidate) => {
+        console.log('Ice Candidate Received', candidate)
+        handleCandidate(candidate)
+    });
 
     return (
         <div className='min-h-screen py-4 flex justify-center items-center'>
