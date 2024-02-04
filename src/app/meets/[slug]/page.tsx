@@ -261,7 +261,7 @@ const Lobby = () => {
     )
 
     return (
-        <div className='flex justify-center items-center min-h-screen p-4'>
+        <div className='flex justify-center items-center min-h-screen p-4 bg-slate-800 text-white'>
             {!joined ? (
                 <div className='h-full flex flex-col lg:flex-row lg:h-5/6 justify-between items-center gap-10'>
                     <div className='max-w-96 w-full'>{videoElement}</div>
