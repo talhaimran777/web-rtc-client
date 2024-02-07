@@ -252,6 +252,10 @@ const Lobby = () => {
         socket.on('answer', handleAnswer)
 
         socket.on('ice-candidate', handleIceCandidate)
+
+        socket.on('room-full', () => {
+            alert('This room is full. You can always create a new room.')
+        })
     }, [socket])
 
     useEffect(() => {
