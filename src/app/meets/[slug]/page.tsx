@@ -11,7 +11,7 @@ const socket = io(serverURL)
 const peers = new Map<string, RTCPeerConnection>()
 let stream: MediaStream
 
-const Lobby = () => {
+const MeetingRoom = () => {
     const { slug } = useParams()
 
     const [loading, setLoading] = useState(true)
@@ -52,27 +52,41 @@ const Lobby = () => {
 
         pc.ontrack = (e) => {
             console.log('Track Received', e, socketId)
-            console.log('Streams', e.streams)
 
-            e.streams.forEach((stream) => {
-                console.log('Stream', stream)
+            const stream = e.streams[0]
+            console.log('Stream', stream)
 
-                // Todo: Add a check for video type
+            if (e.track.kind === 'video') {
                 // Create a video element
                 const videoElement = document.createElement('video')
 
                 // Set attributes for the video element
-                videoElement.id = socketId
+                videoElement.id = `video-${socketId}`
                 videoElement.autoplay = true
                 videoElement.playsInline = true
-                videoElement.controls = false
+                videoElement.controls = true
                 videoElement.className = 'rounded-lg'
                 videoElement.srcObject = stream
 
                 if (videoContainerRef && videoContainerRef.current) {
                     videoContainerRef.current.appendChild(videoElement)
                 }
-            })
+            }
+
+            if (e.track.kind === 'audio') {
+                // Create a audio element
+                const audioElement = document.createElement('audio')
+                
+                // Set attributes for the audio element
+                audioElement.id = `audio-${socketId}` 
+                audioElement.autoplay = true
+                audioElement.controls = true
+                audioElement.srcObject = stream
+                
+                if (videoContainerRef && videoContainerRef.current) {
+                    videoContainerRef.current.appendChild(audioElement)
+                }
+            }
         }
 
         pc.onicecandidate = (event) => {
@@ -193,14 +207,14 @@ const Lobby = () => {
         const peer = peers.get(socketId)
 
         if (peer) {
-            peer.close()
-            peers.delete(socketId)
-            const videoToRemove = document.getElementById(socketId)
+            const videoToRemove = document.getElementById(`video-${socketId}`)
+            const audioToRemove = document.getElementById(`audio-${socketId}`)
 
-            if (videoToRemove) {
-                document
-                    .getElementById('video-container')
-                    ?.removeChild(videoToRemove)
+            if (videoToRemove && audioToRemove) {
+                videoContainerRef.current?.removeChild(videoToRemove)
+                videoContainerRef.current?.removeChild(audioToRemove)
+                peer.close()
+                peers.delete(socketId)
             }
         }
 
@@ -230,7 +244,7 @@ const Lobby = () => {
             className='bg-black rounded-md'
             autoPlay
             playsInline
-            controls={false}
+            controls
         ></video>
     )
 
@@ -310,4 +324,4 @@ const Lobby = () => {
     )
 }
 
-export default Lobby
+export default MeetingRoom
