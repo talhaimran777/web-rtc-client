@@ -81,6 +81,7 @@ const MeetingRoom = () => {
                 audioElement.id = `audio-${socketId}` 
                 audioElement.autoplay = true
                 audioElement.controls = true
+                audioElement.style.display = 'none'
                 audioElement.srcObject = stream
                 
                 if (videoContainerRef && videoContainerRef.current) {
