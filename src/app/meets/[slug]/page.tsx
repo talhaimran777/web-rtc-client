@@ -64,7 +64,6 @@ const MeetingRoom = () => {
                 videoElement.id = `video-${socketId}`
                 videoElement.autoplay = true
                 videoElement.playsInline = true
-                videoElement.controls = true
                 videoElement.className = 'rounded-lg'
                 videoElement.srcObject = stream
 
@@ -80,7 +79,6 @@ const MeetingRoom = () => {
                 // Set attributes for the audio element
                 audioElement.id = `audio-${socketId}` 
                 audioElement.autoplay = true
-                audioElement.controls = true
                 audioElement.style.display = 'none'
                 audioElement.srcObject = stream
                 
@@ -245,7 +243,6 @@ const MeetingRoom = () => {
             className='bg-black rounded-md'
             autoPlay
             playsInline
-            controls
         ></video>
     )
 
